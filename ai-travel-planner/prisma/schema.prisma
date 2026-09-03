@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  clerkId       String          @unique
+  email         String          @unique
+  name          String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  trips         Trip[]
+  savedPlaces   SavedPlace[]
+  travelProfile TravelProfile?
+
+  @@index([clerkId])
+}
+
+model TravelProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  budgetLevel      String   @default("medium")
+  travelStyle      String   @default("balanced")
+  walkingTolerance String   @default("high")
+  hotelRating      Int      @default(3)
+  interests        String[] @default([])
+  foodPreferences  String[] @default([])
+  travelModes      String[] @default(["public_transport"])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Trip {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  destination      String
+  startDate        DateTime
+  endDate          DateTime
+  budget           Float
+  currency         String            @default("USD")
+  travelers        Int               @default(1)
+
+  interests        String[]          @default([])
+  foodPreferences  String[]          @default([])
+  travelStyle      String?
+  transportation   String?
+  hotelName        String?
+
+  estimatedCost    Float             @default(0)
+  isPublic         Boolean           @default(false)
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  days             TripDay[]
+  budgetBreakdown  BudgetBreakdown?
+
+  @@index([userId])
+  @@index([destination])
+}
+
+model TripDay {
+  id        String     @id @default(cuid())
+  tripId    String
+  trip      Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  dayNumber Int
+  date      DateTime
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  activities Activity[]
+
+  @@index([tripId])
+}
+
+model Activity {
+  id            String   @id @default(cuid())
+  dayId         String
+  day           TripDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  title         String
+  description   String?
+  category      String?
+  startTime     DateTime
+  endTime       DateTime
+  placeName     String?
+  placeId       String?
+  latitude      Float?
+  longitude     Float?
+  rating        Float?
+  openingHours  String?
+  priceLevel    String?
+  phoneNumber   String?
+  website       String?
+  photoUrl      String?
+  estimatedCost Float?
+  order         Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([dayId])
+}
+
+model SavedPlace {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  placeId   String
+  latitude  Float
+  longitude Float
+  category  String
+  rating    Float?
+  photoUrl  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([placeId])
+}
+
+model BudgetBreakdown {
+  id             String   @id @default(cuid())
+  tripId         String   @unique
+  trip           Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  accommodation  Float    @default(0)
+  transportation Float    @default(0)
+  food           Float    @default(0)
+  activities     Float    @default(0)
+  shopping       Float    @default(0)
+  miscellaneous  Float    @default(0)
+  emergency      Float    @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
